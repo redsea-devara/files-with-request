@@ -1,0 +1,48 @@
+<?xml version="1.0" encoding="UTF-8"?>
+
+<mule xmlns:http="http://www.mulesoft.org/schema/mule/http" xmlns:file="http://www.mulesoft.org/schema/mule/file"
+	xmlns:ee="http://www.mulesoft.org/schema/mule/ee/core"
+	xmlns:db="http://www.mulesoft.org/schema/mule/db" xmlns="http://www.mulesoft.org/schema/mule/core" xmlns:doc="http://www.mulesoft.org/schema/mule/documentation" xmlns:xsi="http://www.w3.org/2001/XMLSchema-instance" xsi:schemaLocation="http://www.mulesoft.org/schema/mule/core http://www.mulesoft.org/schema/mule/core/current/mule.xsd
+http://www.mulesoft.org/schema/mule/db http://www.mulesoft.org/schema/mule/db/current/mule-db.xsd
+http://www.mulesoft.org/schema/mule/ee/core http://www.mulesoft.org/schema/mule/ee/core/current/mule-ee.xsd
+http://www.mulesoft.org/schema/mule/file http://www.mulesoft.org/schema/mule/file/current/mule-file.xsd
+http://www.mulesoft.org/schema/mule/http http://www.mulesoft.org/schema/mule/http/current/mule-http.xsd">
+	<http:request-config name="HTTP_Request_configuration" doc:name="HTTP Request configuration" doc:id="7c2a14c6-067c-4961-a5c6-58afe8675265" >
+		<http:request-connection host="training4-american-ws.cloudhub.io" port="80" />
+	</http:request-config>
+	<db:config name="Database_Config" doc:name="Database Config" doc:id="ffe80aa5-c0d6-4ab1-8d4b-9bbab1c9cbe9" >
+		<db:my-sql-connection host="localhost" port="3306" user="root" password="8978" database="pratice_query" />
+	</db:config>
+	<flow name="files-with-requestFlow" doc:id="f62ae927-60b9-45d9-a675-d44f9c7a1794" >
+		<scheduler doc:name="Scheduler" doc:id="68d7280e-53d7-4e1d-8cd2-7fb63881da62" >
+			<scheduling-strategy >
+				<fixed-frequency frequency="3" timeUnit="MINUTES"/>
+			</scheduling-strategy>
+		</scheduler>
+		<logger level="INFO" doc:name="Logger" doc:id="f23a167e-d9ed-407f-b197-9d78c649a89d" message="flow started"/>
+		<http:request method="GET" doc:name="Request" doc:id="c36617fa-75fa-4721-8a54-0d9832130f80" config-ref="HTTP_Request_configuration" path="/api/flights"/>
+		<set-variable value="#[payload]" doc:name="Set Variable" doc:id="85958a63-0972-4d84-b711-a67da86d707b" variableName="requestresponse"/>
+		<db:select doc:name="Select" doc:id="9a688f85-fece-4a89-aada-0dae8c2feb18" config-ref="Database_Config">
+			<db:sql ><![CDATA[select * from employees where name="hari"]]></db:sql>
+		</db:select>
+		<ee:transform doc:name="Transform Message" doc:id="6ac4de13-f1bf-449e-b272-4b0a06a2607c" >
+			<ee:message >
+				<ee:set-payload ><![CDATA[%dw 2.0
+output application/json
+---
+payload]]></ee:set-payload>
+			</ee:message>
+		</ee:transform>
+		<set-variable value="#[payload]" doc:name="Set Variable" doc:id="dcd35abd-e211-496d-93bd-b3edb849ba23" variableName="dbresponse" />
+		<ee:transform doc:name="Transform Message" doc:id="2062c162-4162-4803-84f8-48504d3bad7b" >
+			<ee:message >
+				<ee:set-payload ><![CDATA[%dw 2.0
+output application/json
+---
+vars.requestresponse ++ vars.dbresponse]]></ee:set-payload>
+			</ee:message>
+		</ee:transform>
+		<file:write doc:name="Write" doc:id="7c639004-efb0-4924-9a2e-2bf786e363ee" path="C:\mulesoft\inputdata\request.txt"/>
+		<logger level="INFO" doc:name="Logger" doc:id="8119e55a-e942-4064-9e0b-78c630452f35" />
+	</flow>
+</mule>
